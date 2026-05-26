@@ -1,0 +1,3 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, Arial, sans-serif; }
+input, button { font-family: inherit; }
