@@ -6,9 +6,25 @@ export default function Screen4Detail() {
   const nav = useNavigate();
   const { state } = useLocation();
   const acc = state as Account;
-  const [showPass, setShowPass] = useState(false);
-  const [copied, setCopied] = useState('');
+  const [showPass, setShowPass]   = useState(false);
+  const [copied, setCopied]       = useState('');
   const [showDelete, setShowDelete] = useState(false);
+  const [editing, setEditing]     = useState(false);
+  const [editName, setEditName]   = useState(acc?.name || '');
+  const [editUser, setEditUser]   = useState(acc?.user || '');
+  const [editPass, setEditPass]   = useState(acc?.password || '');
+  const [saved, setSaved]         = useState(false);
+
+  const saveEdit = () => {
+    const all = loadAccounts();
+    const updated = all.map(a => a.id === acc.id
+      ? { ...a, name: editName, user: editUser, password: editPass }
+      : a
+    );
+    saveAccounts(updated);
+    setSaved(true);
+    setTimeout(() => { setSaved(false); setEditing(false); }, 1000);
+  };
 
   if (!acc) { nav('/vault'); return null; }
 
@@ -31,7 +47,7 @@ export default function Screen4Detail() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '52px 18px 16px' }}>
         <span onClick={() => nav('/vault')} style={{ fontSize: 13, color: C.indigo, fontWeight: 700, cursor: 'pointer' }}>← Mis Claves</span>
-        <span onClick={() => nav('/edit', { state: acc })} style={{ fontSize: 18, color: C.indigo, cursor: 'pointer' }}>✏️</span>
+        <span onClick={() => setEditing(!editing)} style={{ fontSize: 18, color: C.indigo, cursor: 'pointer' }}>✏️</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
@@ -96,6 +112,35 @@ export default function Screen4Detail() {
           {acc.level === 'NS' ? 'NeuroSecure · Protección máxima' : acc.level === 'AD' ? 'Adaptativa · Buena protección' : 'Predictiva · Actualiza tu clave'}
         </div>
 
+        {editing && (
+          <div style={{ background: C.indigoBg, borderRadius: 12, padding: '14px',
+            marginBottom: 12, border: '1.5px solid ' + C.indigo }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.indigo, marginBottom: 10 }}>
+              ✏️ Editando cuenta
+            </div>
+            {[
+              { label: 'Nombre del servicio', val: editName, set: setEditName },
+              { label: 'Usuario / email',     val: editUser, set: setEditUser },
+              { label: 'Contraseña',          val: editPass, set: setEditPass },
+            ].map((f, i) => (
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: C.indigo, fontWeight: 600,
+                  textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</div>
+                <input value={f.val} onChange={e => f.set(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 8,
+                    border: '1.5px solid ' + C.indigo, fontSize: 13, outline: 'none',
+                    color: C.dark, boxSizing: 'border-box' as const, background: C.white }}/>
+              </div>
+            ))}
+            <div onClick={saveEdit}
+              style={{ padding: '11px 0', borderRadius: 10, background: saved ? C.green : C.indigo,
+                color: C.white, fontWeight: 700, fontSize: 13, textAlign: 'center', cursor: 'pointer',
+                transition: 'background 0.3s' }}>
+              {saved ? '✅ Guardado!' : 'Guardar cambios'}
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
           <div onClick={() => copy('pass')}
             style={{ flex: 1, padding: '12px 0', borderRadius: 10,
@@ -103,10 +148,10 @@ export default function Screen4Detail() {
               color: C.white, fontWeight: 700, fontSize: 13, textAlign: 'center', cursor: 'pointer' }}>
             {copied === 'pass' ? '✅ Copiado' : 'Copiar contraseña'}
           </div>
-          <div onClick={() => nav('/edit', { state: acc })}
-            style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: C.grayBg,
-              color: C.gray, fontWeight: 700, fontSize: 13, textAlign: 'center', cursor: 'pointer' }}>
-            Editar
+          <div onClick={() => setEditing(!editing)}
+            style={{ flex: 1, padding: '12px 0', borderRadius: 10, background: editing ? C.indigoBg : C.grayBg,
+              color: editing ? C.indigo : C.gray, fontWeight: 700, fontSize: 13, textAlign: 'center', cursor: 'pointer' }}>
+            {editing ? 'Cancelar' : 'Editar'}
           </div>
         </div>
 
