@@ -3,6 +3,71 @@ import { C, loadAccounts, ICON_NAMES } from './shared';
 
 interface Msg { role: 'user' | 'assistant'; text: string; }
 
+// Base de conocimiento local de seguridad
+async function getSmartReply(question: string, vaultCtx: string): Promise<string> {
+  const q = question.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+
+  // Intentar primero con Gemini
+  try {
+    const res = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: `Eres NuroBot, asistente de seguridad de NeuroVault app de contrasenas. 
+Responde en espanol, breve y amigable (max 3 oraciones). Contexto: ${vaultCtx}`,
+        messages: [{ role: 'user', content: question }]
+      })
+    });
+    const data = await res.json();
+    if (data.text && data.text.length > 10) return data.text;
+  } catch { /* usar respuestas locales */ }
+
+  // Respuestas locales inteligentes por palabras clave
+  if (q.includes('cambiar') && (q.includes('contrasena') || q.includes('clave')))
+    return 'Lo recomendable es cambiar tus contraseñas cada 3 a 6 meses, o inmediatamente si sospechas que fueron comprometidas. En el Panel de seguridad puedes ver cuáles necesitan actualizarse.';
+
+  if (q.includes('segura') || q.includes('seguridad') || q.includes('fuerte'))
+    return 'Una contraseña segura tiene más de 12 caracteres, combina mayúsculas, minúsculas, números y símbolos. Con NeuroPass AI puedes crear una escribiendo una frase memorable y la app la transforma automáticamente.';
+
+  if (q.includes('ghostlogin') || q.includes('patron') || q.includes('iconos'))
+    return 'GhostLogin es tu sistema de acceso visual. En vez de una contraseña de texto, seleccionas una secuencia de íconos en orden. Los íconos cambian de posición en cada intento para mayor seguridad.';
+
+  if (q.includes('neurobehavior') || q.includes('comportamiento') || q.includes('biometria'))
+    return 'NeuroBehavior analiza cómo tocas la pantalla al ingresar: velocidad, ritmo y presión. Si detecta un comportamiento muy diferente al tuyo habitual, bloquea el acceso aunque el patrón sea correcto.';
+
+  if (q.includes('neuropass') || q.includes('frase') || q.includes('generar'))
+    return 'NeuroPass AI transforma frases personales en contraseñas seguras. Por ejemplo "Mi perro Max nació en 2020" se convierte en "M!P3rr0_Mx#2020". La frase nunca se guarda, solo la clave resultante.';
+
+  if (q.includes('imagen') || q.includes('libreta') || q.includes('olvide') || q.includes('olvi'))
+    return 'Si olvidaste tu patrón puedes acceder con la imagen PNG que descargaste al crearlo. Ve a la pantalla de inicio y toca "Acceder con imagen guardada", selecciona la imagen de tu galería y entras automáticamente.';
+
+  if (q.includes('vault') || q.includes('boveda') || q.includes('guardar') || q.includes('contrasenas'))
+    return 'Tu vault guarda todas tus contraseñas localmente en tu celular, sin subirlas a ningún servidor. Solo tú puedes acceder con tu patrón GhostLogin. Puedes exportar un backup desde Perfil → Exportar bóveda.';
+
+  if (q.includes('hola') || q.includes('buenas') || q.includes('saludos'))
+    return 'Hola! Soy NuroBot, tu asistente de seguridad de NeuroVault. Puedo ayudarte con consejos de seguridad, explicarte cómo funciona la app o responder dudas sobre tus contraseñas. ¿En qué te ayudo?';
+
+  if (q.includes('que puedes') || q.includes('que sabes') || q.includes('ayuda') || q.includes('funciones'))
+    return 'Puedo ayudarte con: consejos para crear contraseñas seguras, explicar GhostLogin y NeuroBehavior, orientarte sobre cuándo cambiar claves, explicar cómo funciona NeuroPass AI, y responder dudas de seguridad digital.';
+
+  if (q.includes('hack') || q.includes('robar') || q.includes('vulnerar') || q.includes('ataque'))
+    return 'Los ataques más comunes son fuerza bruta (probar millones de combinaciones) y phishing (engañarte para que entregues tu clave). NeuroVault te protege con claves de alta entropía y acceso local sin servidores externos.';
+
+  if (q.includes('dos factores') || q.includes('2fa') || q.includes('autenticacion'))
+    return 'La autenticación de dos factores (2FA) agrega una capa extra de seguridad. NeuroVault ya tiene su propio 2FA interno: tu patrón visual GhostLogin más NeuroBehavior que valida tu comportamiento biométrico.';
+
+  if (q.includes('exportar') || q.includes('backup') || q.includes('respaldo'))
+    return 'Puedes exportar tu vault desde Perfil → Exportar bóveda. Se descarga un archivo JSON con tus contraseñas que puedes guardar como respaldo. Guárdalo en un lugar seguro, preferiblemente cifrado.';
+
+  if (q.includes('cuantas') || q.includes('cuantos') || q.includes('mis cuentas'))
+    return vaultCtx.includes('0 cuentas')
+      ? 'Aún no tienes cuentas guardadas. Ve a la pestaña Nuevo para agregar tu primera contraseña con NeuroPass AI.'
+      : 'Puedes ver el estado de todas tus cuentas en el Panel de Seguridad. Ahí verás cuántas son NeuroSecure y cuáles necesitan actualización.';
+
+  // Respuesta genérica de seguridad
+  return 'Buena pregunta sobre seguridad digital. Mi recomendación general: usa contraseñas únicas para cada cuenta, actívalas con NeuroPass AI para que sean fuertes, y revisa el Panel de seguridad regularmente para detectar claves débiles. ¿Tienes alguna duda más específica?';
+}
+
 const SYSTEM = `Eres el asistente de seguridad de NeuroVault, una app de gestión de contraseñas. 
 Tu nombre es NuroBot. Ayudas a los usuarios con:
 - Consejos de seguridad digital
@@ -40,20 +105,11 @@ export default function ChatBot() {
       : 'El usuario aún no tiene cuentas guardadas.';
 
     try {
-      const res = await fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: SYSTEM + '\n\nContexto del vault del usuario: ' + vaultCtx,
-          messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
-        })
-      });
-      const data = await res.json();
-      const reply = data.text || 'Lo siento, no pude procesar tu pregunta. Intenta de nuevo.';
+      const reply = await getSmartReply(text, vaultCtx);
       setMsgs(p => [...p, { role:'assistant', text: reply }]);
     } catch {
       setMsgs(p => [...p, { role:'assistant',
-        text:'Hubo un error de conexión. Verifica tu internet e intenta de nuevo.' }]);
+        text:'Hubo un error. Intenta de nuevo.' }]);
     } finally {
       setLoading(false);
     }
