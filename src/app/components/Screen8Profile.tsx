@@ -198,7 +198,7 @@ export default function Screen8Profile() {
         )}
 
         {/* Cerrar sesión */}
-        <div onClick={() => nav('/', { replace: true })}
+        <div onClick={() => nav('/')}
           style={{ marginTop:20, padding:'14px 0', borderRadius:12, background:C.redBg,
             color:C.red, fontWeight:700, fontSize:14, textAlign:'center', cursor:'pointer',
             display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
