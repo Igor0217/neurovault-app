@@ -15,13 +15,14 @@ export default function Screen4Detail() {
   const [editPass, setEditPass]   = useState(acc?.password || '');
   const [saved, setSaved]         = useState(false);
 
+  const [currentAcc, setCurrentAcc] = useState<Account>(acc);
+
   const saveEdit = () => {
     const all = loadAccounts();
-    const updated = all.map(a => a.id === acc.id
-      ? { ...a, name: editName, user: editUser, password: editPass }
-      : a
-    );
+    const updatedAcc = { ...currentAcc, name: editName, user: editUser, password: editPass };
+    const updated = all.map(a => a.id === currentAcc.id ? updatedAcc : a);
     saveAccounts(updated);
+    setCurrentAcc(updatedAcc);
     setSaved(true);
     setTimeout(() => { setSaved(false); setEditing(false); }, 1000);
   };
@@ -29,14 +30,14 @@ export default function Screen4Detail() {
   if (!acc) { nav('/vault'); return null; }
 
   const copy = (what: 'user' | 'pass') => {
-    const text = what === 'user' ? acc.user : acc.password;
+    const text = what === 'user' ? currentAcc.user : currentAcc.password;
     navigator.clipboard?.writeText(text).catch(() => {});
     setCopied(what);
     setTimeout(() => setCopied(''), 2000);
   };
 
   const deleteAccount = () => {
-    const all = loadAccounts().filter(a => a.id !== acc.id);
+    const all = loadAccounts().filter(a => a.id !== currentAcc.id);
     saveAccounts(all);
     nav('/vault');
   };
@@ -51,12 +52,12 @@ export default function Screen4Detail() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 14, background: acc.color,
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: currentAcc.color,
           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, marginBottom: 8 }}>
-          {acc.icon}
+          {currentAcc.icon}
         </div>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 6 }}>{acc.name}</div>
-        <Badge level={acc.level} />
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.dark, marginBottom: 6 }}>{currentAcc.name}</div>
+        <Badge level={currentAcc.level} />
       </div>
 
       <div style={{ flex: 1, padding: '0 18px', overflowY: 'auto', paddingBottom: 80 }}>
@@ -66,7 +67,7 @@ export default function Screen4Detail() {
           <div>
             <div style={{ fontSize: 10, color: C.grayLight, marginBottom: 3,
               textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Usuario / email</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{acc.user}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.dark }}>{currentAcc.user}</div>
           </div>
           <span onClick={() => copy('user')} style={{ fontSize: 18, cursor: 'pointer' }}>
             {copied === 'user' ? '✅' : '📋'}
@@ -81,7 +82,7 @@ export default function Screen4Detail() {
               textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Contraseña</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.dark,
               fontFamily: 'monospace', letterSpacing: 2, wordBreak: 'break-all' }}>
-              {showPass ? acc.password : '••••••••••••'}
+              {showPass ? currentAcc.password : '••••••••••••'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -97,19 +98,19 @@ export default function Screen4Detail() {
           <div style={{ fontSize: 10, color: C.grayLight, marginBottom: 3,
             textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Tiempo de vulnerabilidad</div>
           <div style={{ fontSize: 15, fontWeight: 800,
-            color: acc.level === 'NS' ? C.green : acc.level === 'AD' ? C.orange : C.red }}>
-            {acc.level === 'NS' ? '+100 años' : acc.level === 'AD' ? '~10 años' : 'Menos de 1 año ⚠️'}
+            color: currentAcc.level === 'NS' ? C.green : currentAcc.level === 'AD' ? C.orange : C.red }}>
+            {currentAcc.level === 'NS' ? '+100 años' : currentAcc.level === 'AD' ? '~10 años' : 'Menos de 1 año ⚠️'}
           </div>
         </div>
 
         <div style={{ height: 6, borderRadius: 3, background: '#E5E7EB', marginBottom: 6, overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 3, transition: 'width 0.4s',
-            width: acc.level === 'NS' ? '90%' : acc.level === 'AD' ? '60%' : '25%',
-            background: acc.level === 'NS' ? C.green : acc.level === 'AD' ? C.orange : C.red }} />
+            width: currentAcc.level === 'NS' ? '90%' : currentAcc.level === 'AD' ? '60%' : '25%',
+            background: currentAcc.level === 'NS' ? C.green : currentAcc.level === 'AD' ? C.orange : C.red }} />
         </div>
         <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 18,
-          color: acc.level === 'NS' ? C.green : acc.level === 'AD' ? C.orange : C.red }}>
-          {acc.level === 'NS' ? 'NeuroSecure · Protección máxima' : acc.level === 'AD' ? 'Adaptativa · Buena protección' : 'Predictiva · Actualiza tu clave'}
+          color: currentAcc.level === 'NS' ? C.green : currentAcc.level === 'AD' ? C.orange : C.red }}>
+          {currentAcc.level === 'NS' ? 'NeuroSecure · Protección máxima' : currentAcc.level === 'AD' ? 'Adaptativa · Buena protección' : 'Predictiva · Actualiza tu clave'}
         </div>
 
         {editing && (
