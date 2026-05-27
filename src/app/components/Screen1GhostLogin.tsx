@@ -121,16 +121,28 @@ export default function Screen1GhostLogin() {
         setOcrError('No se detecto texto. Sube la imagen correcta.');
         return;
       }
-      const normalizedText = text.replace(/[\n\r]+/g,',').replace(/\s{2,}/g,',');
-      const words = normalizedText.split(',').map((w:string) => w.trim().toLowerCase()).filter(Boolean);
-      const saved = loadSavedPattern();
-      const patternNames = saved.map((ic:string) => ICON_NAMES[ic] || '');
+      // Extraer solo palabras que coincidan con nombres válidos de iconos
+      const validNames = Object.values(ICON_NAMES).map((n:string) =>
+        n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()
+      );
       const norm = (s:string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      const normWords = words.map(norm);
-      const normPattern = patternNames.map(norm);
-      const match = normPattern.length > 0 && normPattern.length === normWords.length &&
+      
+      // Dividir el texto en tokens (por espacios, comas, puntos, saltos de línea)
+      const tokens = text.split(/[,\s.\n\r]+/).map(norm).filter(Boolean);
+      
+      // Filtrar solo tokens que coincidan con nombres válidos
+      const foundWords = tokens.filter((token:string) =>
+        validNames.some((vn:string) => token === vn || vn.startsWith(token) || token.startsWith(vn))
+      );
+      
+      const saved = loadSavedPattern();
+      const patternNames = saved.map((ic:string) => norm(ICON_NAMES[ic] || ''));
+      const normPattern = patternNames;
+      
+      // Comparar palabras encontradas contra el patrón guardado
+      const match = normPattern.length > 0 && normPattern.length === foundWords.length &&
         normPattern.every((name:string, idx:number) => {
-          const w = normWords[idx];
+          const w = foundWords[idx];
           return w === name || name.startsWith(w) || w.startsWith(name) ||
                  name.includes(w) || w.includes(name);
         });
@@ -138,7 +150,7 @@ export default function Screen1GhostLogin() {
         setSuccess('Acceso concedido por imagen!');
         setTimeout(() => nav('/vault'), 900);
       } else {
-        setOcrError('Lei: "' + words.join(', ') + '" - No coincide con tu patron.');
+        setOcrError('Lei: "' + foundWords.join(', ') + '" - No coincide. Esperaba: ' + patternNames.join(', '));
       }
     } catch(err: any) {
       setOcrError('Error: ' + err.message);
