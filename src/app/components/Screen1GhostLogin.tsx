@@ -159,18 +159,14 @@ export default function Screen1GhostLogin() {
     }
   };
 
-  const recordTouch = (e: React.TouchEvent|React.MouseEvent, iconIndex: number) => {
-    let x=0, y=0, area=100;
-    if ('touches' in e && e.touches.length>0) {
-      const t = e.touches[0];
-      x=t.clientX; y=t.clientY;
-      area = (t as any).radiusX && (t as any).radiusY
-        ? (t as any).radiusX * (t as any).radiusY * Math.PI : 100;
-    } else if ('clientX' in e) { x=e.clientX; y=e.clientY; area=80; }
-    touchEvents.current.push({ iconIndex, timestamp:Date.now(), x, y, touchArea:area });
+  const recordTouch = (e: React.MouseEvent, iconIndex: number) => {
+    touchEvents.current.push({
+      iconIndex, timestamp:Date.now(),
+      x: e.clientX, y: e.clientY, touchArea: 80
+    });
   };
 
-  const toggle = (i: number, e: React.TouchEvent|React.MouseEvent) => {
+  const toggle = (i: number, e: React.MouseEvent) => {
     if (blocked) return;
     recordTouch(e, i);
     setError('');
@@ -467,8 +463,7 @@ export default function Screen1GhostLogin() {
           const order = selected.indexOf(i);
           return (
             <div key={icon+i}
-              onTouchStart={e=>toggle(i,e)}
-              onClick={e=>{ if (!('touches' in e)) toggle(i,e); }}
+              onClick={e=>toggle(i,e)}
               style={{aspectRatio:'1',borderRadius:12,display:'flex',
                 flexDirection:'column',alignItems:'center',justifyContent:'center',
                 gap:2,cursor:blocked?'not-allowed':'pointer',
