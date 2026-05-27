@@ -150,7 +150,7 @@ export default function Screen1GhostLogin() {
         setSuccess('Acceso concedido por imagen!');
         setTimeout(() => nav('/vault'), 900);
       } else {
-        setOcrError('Lei: "' + foundWords.join(', ') + '" - No coincide. Esperaba: ' + patternNames.join(', '));
+        setOcrError('La imagen no coincide con tu patron. Intenta con la imagen correcta.');
       }
     } catch(err: any) {
       setOcrError('Error: ' + err.message);
